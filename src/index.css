@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
+
+  /* Industrial Light Palette */
+  --color-surface: #f9f9ff;
+  --color-surface-dim: #d8d9e2;
+  --color-on-surface: #191c21;
+  --color-primary: #004a96;
+  --color-primary-container: #1062be;
+  --color-secondary: #545f72;
+  --color-outline: #727783;
+  --color-outline-variant: #c2c6d4;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-on-surface font-sans text-[13px] leading-[18px];
+  }
+}
+
+/* Global Reset to Sharp Corners */
+* {
+  border-radius: 0 !important;
+}
+
+/* Custom Scrollbar for Industrial Feel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f3f9;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+@layer base {
+  body {
+    @apply bg-[#f8f9fa] text-[#1c2127] font-sans antialiased;
+  }
+
+  /* Palantir-like technical grid vibe */
+  .tech-grid {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px);
+  }
+
+  .border-tech {
+    @apply border-[#e1e4e8];
+  }
+
+  .bg-sidebar {
+    @apply bg-[#ffffff];
+  }
+
+  .bg-workspace {
+    @apply bg-[#f8f9fa];
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-[#106ba3] hover:bg-[#0e5a8a] text-white rounded text-sm font-medium transition-colors shadow-sm;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-white border border-[#d1d5da] hover:bg-[#f3f4f6] text-[#24292e] rounded text-sm font-medium transition-colors;
+  }
+
+  .input-base {
+    @apply px-3 py-2 bg-white border border-[#d1d5da] rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#106ba3] focus:border-[#106ba3];
+  }
+}

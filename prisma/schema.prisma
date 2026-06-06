@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Ontology {
+  id                     String            @id @default(uuid())
+  name                   String
+  description            String?
+  status                 String            @default("draft")
+  latestPublishedVersion String?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  objectTypes            ObjectType[]
+  linkTypes              LinkType[]
+  versions               OntologyVersion[]
+}
+
+model OntologyVersion {
+  id         String   @id @default(uuid())
+  ontologyId String
+  version    String
+  status     String   @default("published")
+  changelog  String?
+  snapshot   String   // JSON string of the ontology state at this version
+  createdAt  DateTime @default(now())
+  ontology   Ontology @relation(fields: [ontologyId], references: [id])
+}
+
+model ObjectType {
+  id           String     @id @default(uuid())
+  ontologyId   String
+  apiName      String
+  displayName  String
+  description  String?
+  status       String     @default("active")
+  primaryKey   String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  ontology     Ontology   @relation(fields: [ontologyId], references: [id])
+  properties   Property[]
+}
+
+model Property {
+  id           String     @id @default(uuid())
+  objectTypeId String
+  apiName      String
+  displayName  String
+  type         String
+  required     Boolean    @default(false)
+  status       String     @default("active")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  objectType   ObjectType @relation(fields: [objectTypeId], references: [id])
+}
+
+model LinkType {
+  id          String   @id @default(uuid())
+  ontologyId  String
+  apiName     String
+  displayName String
+  fromObject  String
+  toObject    String
+  cardinality String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ontology    Ontology @relation(fields: [ontologyId], references: [id])
+}
+
+model Mapping {
+  id         String   @id @default(uuid())
+  entityId   String   // RID ref
+  sourceId   String
+  logic      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String
+  action    String
+  entityId  String?
+  traceId   String
+  payload   String?  // JSON string
+  createdAt DateTime @default(now())
+}
+
+model QueryEvent {
+  id           String   @id @default(uuid())
+  queryType    String   // e.g. SEARCH, GET_DOC, AGGREGATE
+  targetRef    String?  // ObjectType or field
+  parameters   String?  // JSON
+  durationMs   Int
+  resultCount  Int
+  actorId      String
+  traceId      String
+  createdAt    DateTime @default(now())
+}
+
+model QueryPath {
+  id           String   @id @default(uuid())
+  name         String
+  steps        String   // JSON array
+  complexity   Int
+  actorId      String
+  createdAt    DateTime @default(now())
+}
+
+model HotspotSnapshot {
+  id           String   @id @default(uuid())
+  window       String   // 1h, 24h, 7d
+  targetRef    String
+  hitCount     Int
+  intensity    Float
+  createdAt    DateTime @default(now())
+}
+
+model ImpactGraphSnapshot {
+  id           String   @id @default(uuid())
+  rootId       String
+  graphData    String   // JSON
+  score        Float
+  createdAt    DateTime @default(now())
+}
+
+model SavedView {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  config       String   // JSON
+  category     String   // impact, query, hotspot
+  actorId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model App {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  icon        String?       // Lucide icon name
+  status      String        @default("draft")
+  pages       AppPage[]
+  navItems    AppNavItem[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model AppPage {
+  id          String        @id @default(uuid())
+  appId       String
+  name        String
+  type        String        // record, list, dashboard, workspace
+  config      String        // JSON configuration for slots
+  app         App           @relation(fields: [appId], references: [id])
+  bindings    PageBinding[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model AppNavItem {
+  id          String        @id @default(uuid())
+  appId       String
+  label       String
+  icon        String?
+  targetPageId String?
+  parentId    String?
+  order       Int           @default(0)
+  app         App           @relation(fields: [appId], references: [id])
+}
+
+model PageBinding {
+  id          String        @id @default(uuid())
+  pageId      String
+  refType     String        // ontology, action, saved_view
+  refId       String        // CommonRef (ID)
+  slotName    String        // Convention: main, activity, side, etc.
+  page        AppPage       @relation(fields: [pageId], references: [id])
+}
+
+model ActionDefinition {
+  id           String      @id @default(uuid())
+  apiName      String      @unique
+  displayName  String
+  description  String?
+  status       String      @default("draft")
+  parameters   String      // JSON schema for input params
+  guardPolicy  String?     // JSON of GuardPolicy
+  script       String?     // Optional script if it's a script action
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  runs         Run[]
+}
+
+model FunctionDefinition {
+  id           String      @id @default(uuid())
+  apiName      String      @unique
+  displayName  String
+  description  String?
+  inputSchema  String
+  outputSchema String
+  createdAt    DateTime    @default(now())
+}
+
+model Run {
+  id             String      @id @default(uuid())
+  actionId       String
+  status         String      @default("queued") // queued, running, succeeded, failed, canceled
+  idempotencyKey String?     @unique
+  actorId        String      @default("admin")
+  input          String?     // JSON input
+  output         String?     // JSON output
+  error          String?     // JSON error if failed
+  parentRunId    String?     // For retries
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  action         ActionDefinition @relation(fields: [actionId], references: [id])
+  steps          RunStep[]
+}
+
+model RunStep {
+  id        String   @id @default(uuid())
+  runId     String
+  name      String
+  status    String
+  startTime DateTime @default(now())
+  endTime   DateTime?
+  logs      String?
+  run       Run      @relation(fields: [runId], references: [id])
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  rules       PermissionRule[]
+  createdAt   DateTime         @default(now())
+}
+
+model PermissionRule {
+  id          String   @id @default(uuid())
+  roleId      String
+  resource    String   // e.g. "ontology", "action", "app"
+  action      String   // e.g. "read", "write", "publish"
+  effect      String   // "ALLOW", "DENY"
+  condition   String?  // JSON condition
+  role        Role     @relation(fields: [roleId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model AlertRule {
+  id          String       @id @default(uuid())
+  name        String
+  category    String       // PERFORMANCE, SECURITY, AUDIT
+  threshold   String       // e.g. "duration > 1000"
+  severity    String       // LOW, MEDIUM, HIGH, CRITICAL
+  enabled     Boolean      @default(true)
+  events      AlertEvent[]
+  createdAt   DateTime     @default(now())
+}
+
+model AlertEvent {
+  id          String    @id @default(uuid())
+  ruleId      String
+  sourceType  String    // QUERY, RUN
+  sourceId    String
+  message     String
+  severity    String
+  rule        AlertRule @relation(fields: [ruleId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model CostRecord {
+  id           String   @id @default(uuid())
+  window       String   // 1h, 1d
+  computeSecs  Float
+  queryCount   Int
+  category     String?
+  createdAt    DateTime @default(now())
+}
+
+model ConfigItem {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  group       String   @default("GENERAL")
+  description String?
+  updatedAt   DateTime @updatedAt
+}

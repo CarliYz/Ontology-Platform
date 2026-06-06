@@ -1,0 +1,6 @@
+{
+  "name": "企业级Ontology 产品",
+  "description": "企业级 Ontology 平台，包含图谱建设、分析、动作执行与治理运维的全链路能力。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API", "Ontology Modeling", "Graph Analysis", "Action Orchestration", "Platform Governance"]
+}
